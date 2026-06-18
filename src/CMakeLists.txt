@@ -12,6 +12,7 @@ add_library(fabm_models_mops OBJECT
             tracer.F90
             nitrogen_fixation.F90
             runoff.F90
+            sediment.F90    # added module
            )
 
 target_link_libraries(fabm_models_mops PRIVATE fabm_base)

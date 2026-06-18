@@ -14,6 +14,8 @@ module mops_model_library
    use mops_tracer
    use mops_runoff
 
+   use mops_sediment                   ! added sediment module
+
    implicit none
 
    private
@@ -45,6 +47,7 @@ contains
          case ('tracer'); allocate(type_mops_tracer::model)
          case ('runoff'); allocate(type_mops_runoff::model)
          ! Add new models here
+         case ( 'sediment' ); allocate(type_mops_sediment::model)    ! added sediment module
          case default
             call self%type_base_model_factory%create(name, model)
       end select
