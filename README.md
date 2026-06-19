@@ -7,8 +7,24 @@ Original `README.md`
 
 ## Differences to the previous Implementation
 
-This repository contains additional implementations, which are not per default part of MOPS. 
+This repository contains additional implementations, which are not default in FABM-MOPS. 
 
 ### Sediment Module
 
 The main addition is the implementation of the Sediment module `sediment.F90`.
+
+A new variable "sediment" was created in order to simulate sediment plume that is transported as a tracer and contains a sinking velocity. By taking the inspiration from the detritus, the module for the sediment is structured accordingly. However, the main difference is here, that sinking of the sediment is not following a Martin b curve, which could be still activated with the assumption of sediment remineralization (e.g. by contents of organic matter). Instead, there is a constant depth-independent sinking velocity.
+
+An inherent optical property of absorption and scattering of sediment particles leads to an increase of light attenuation. Therefore, a light attenuation coefficient `ACksed` was added. 
+
+### Sediment Impact Processes
+
+Sensitivity experiments of sediment impacts are possible to carry out by using 4 implemented factors of MOPS Zooplankton parameters (default are unchanged 1). By changing the factors \< 1 \< one can test the system responses of potential impacts.  
+Following processes are included:
+- changed (reduced) grazing rate as in `ACmuzoofac`
+- changed (reduced) assimilation rate `ACefffac`
+- changed (reduced) densitiy-dependent loss rate (`AComnizfac`)
+- changed (increased) zooplankton mortality (`zlambdafac`)
+
+*Remark*: `...fac` points out to the additional factor of the corresponding parameter that is given in the name before the suffix.
+
