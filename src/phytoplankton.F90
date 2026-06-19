@@ -17,6 +17,7 @@ module mops_phytoplankton
       type (type_diagnostic_variable_id) :: id_f1, id_chl, id_det_prod_phy
 
       real(rk) :: TempB, ro2ut, ACmuphy, ACik, ACkpo4, AClambda, AComni, plambda, exutodop
+      real(rk) :: ACkchl
    contains
       ! Model procedures
       procedure :: initialize
@@ -31,14 +32,13 @@ contains
       class (type_mops_phytoplankton), intent(inout), target :: self
       integer,                         intent(in)            :: configunit
 
-      real(rk) :: ACkchl
+      ! real(rk) :: ACkchl ! LS chosen for `self%var` variable declaration for higher consistency 
 
       call self%get_parameter(self%TempB, 'TempB', 'degrees Celsius','reference temperature for T-dependent growth', default=15.65_rk) 
-      call self%get_parameter(self%ro2ut, 'ro2ut', 'mol O2/mol P','redfield -O2:P ratio', default=151.13958_rk)
       call self%get_parameter(self%ACmuphy, 'ACmuphy', '1/day','max. growth rate', default=0.6_rk) 
       call self%get_parameter(self%ACik, 'ACik', 'W/m2','light half-saturation constant', default=9.653_rk) 
       call self%get_parameter(self%ACkpo4, 'ACkpo4', 'mmol P/m3','half-saturation constant for PO4 uptake', default=0.4995_rk) 
-      call self%get_parameter(ACkchl, 'ACkchl', '1/(m*mmol P/m3)','attenuation', default=0.03_rk*rnp) 
+      call self%get_parameter(self%ACkchl, 'ACkchl', '1/(m*mmol P/m3)','attenuation due to phytoplankton', default=0.03_rk*rnp)  ! LS add specificatin of attenuatoin
       call self%get_parameter(self%AClambda, 'AClambda', '1/day','exudation rate', default=0.03_rk) 
       call self%get_parameter(self%exutodop, 'exutodop', '1','fraction of exudation that goes into DOP', default=0.0_rk)
       call self%get_parameter(self%AComni, 'AComni', 'm3/(mmol P * day)','density dependent loss rate', default=0.0_rk) 
@@ -48,10 +48,11 @@ contains
 ! (see Jorns mail on October 16, 2024)
       call self%register_state_variable(self%id_c, 'c', 'mmol P/m3', 'concentration')
 
-      call self%register_diagnostic_variable(self%id_f1, 'f1', 'mmol P/m3/d', 'growth rate')
+      call self%register_diagnostic_variable(self%id_f1, 'f1', 'mmol P/m3/d', 'growth') ! LS remark: removal of 'rate': would indicate a flux, i.e. per area
       call self%register_diagnostic_variable(self%id_chl, 'chl', 'mg/m3/d', 'chlorophyll')
       ! VS  introducing detritus production by phytoplankton as diagnostic variable
       call self%register_diagnostic_variable(self%id_det_prod_phy, 'det_prod_phy', 'mmol P/m3/d', 'detritus produced by phytoplankton')
+      call self%register_diagnostic_variable(self%id_ACkchl, 'att_chl', '1/m', 'attenuation due to phytoplankton') 
 
       call self%register_state_dependency(self%id_dop, 'dop', 'mmol P/m3', 'dissolved organic phosphorus')
       call self%register_state_dependency(self%id_det, 'det', 'mmol P/m3', 'detritus')
@@ -68,7 +69,7 @@ contains
       call self%register_dependency(self%id_bgc_dz, standard_variables%cell_thickness)
       call self%register_dependency(self%id_att, standard_variables%attenuation_coefficient_of_photosynthetic_radiative_flux)
 
-      call self%add_to_aggregate_variable(standard_variables%attenuation_coefficient_of_photosynthetic_radiative_flux, self%id_c, scale_factor=ACkchl)
+      call self%add_to_aggregate_variable(standard_variables%attenuation_coefficient_of_photosynthetic_radiative_flux, self%id_c, scale_factor=self%ACkchl)
       call self%add_to_aggregate_variable(standard_variables%total_phosphorus, self%id_c)
       call self%add_to_aggregate_variable(total_chlorophyll, self%id_chl)
       ! VS also consider total carbon and total nitrogen
@@ -89,6 +90,7 @@ contains
 
       real(rk) :: bgc_theta, bgc_dz, ciz, bgc_tau, att, PO4, DIN, PHY
       real(rk) :: tempscale, TACmuphy, TACik, atten, glbygd, flightlim, limnut, fnutlim, phygrow0, phygrow, phyexu, phyloss, term1
+      real(rk) :: att_phy ! LS PLUME
 
       _LOOP_BEGIN_
 
@@ -101,6 +103,10 @@ contains
       _GET_(self%id_po4, PO4)
       _GET_(self%id_din, DIN)
       _GET_(self%id_c,   PHY)
+
+      ! LS just adding the attenuation as diagnostic
+      att_phy = self%ACkchl*PHY      
+      _SET_DIAGNOSTIC_(self%id_ACkchl, att_phy) 
 
 ! temperature dependence of phytoplankton growth (Eppley)
 ! this affects the light-half-saturation constant via acik=acmuphy/alpha
