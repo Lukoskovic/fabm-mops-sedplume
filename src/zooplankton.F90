@@ -10,14 +10,15 @@ module mops_zooplankton
    private
 
    type, extends(type_base_model), public :: type_mops_zooplankton
-      type (type_state_variable_id) :: id_c, id_phy, id_po4, id_din, id_oxy, id_det, id_dop, id_dic, id_alk
+      type (type_state_variable_id) :: id_c, id_phy, id_po4, id_din, id_oxy, id_det, id_dop, id_dic, id_sed, id_alk
       type (type_diagnostic_variable_id) :: id_f2
       ! VS: introducing id_det_prod_zoo (see below)
       type (type_diagnostic_variable_id) :: id_det_prod_zoo
       ! VS: diagnostic to complete all carbon_c flux diagnostics
       type (type_diagnostic_variable_id) :: id_zooexu
 
-      real(rk) :: ro2ut, ACmuzoo, ACkphy, AClambdaz, AComniz, ACeff, graztodop, zlambda
+      real(rk) :: ACmuzoo, ACkphy, AClambdaz, AComniz, ACeff, graztodop, zlambda
+      real(rk) :: ACmuzoofac, ACefffac, AComnizfac, zlambdafac  ! PLUME
    contains
       ! Model procedures
       procedure :: initialize
@@ -56,6 +57,13 @@ contains
       call self%register_state_dependency(self%id_dic, 'dic', 'mmol C/m3', 'dissolved inorganic carbon')
       call self%register_state_dependency(self%id_alk, 'alk', 'mmol/m3', 'alkalinity')
 
+      ! LS PLUME stuff (adding some reducing factors for parameters in presence of sediment)
+      call self%get_parameter(self%ACmuzoofac, 'ACmuzoofac', '1', 'reduction factor for max. grazing rate', default=1.0_rk)
+      call self%get_parameter(self%ACefffac, 'ACefffac', '1', 'reduction factor for assimilation efficiency', default=1.0_rk)
+      call self%get_parameter(self%AComnizfac, 'AComnizfac', '1', 'reduction factor for density dependent loss rate', default=1.0_rk)
+      call self%get_parameter(self%zlambdafac, 'zlambdafac', '1', 'reduction factor mortality', default=1.0_rk)
+      call self%register_state_dependency(self%id_sed, 'sed', 'g/l', 'sediment')
+
       ! Register environmental dependencies
       call self%add_to_aggregate_variable(standard_variables%total_phosphorus, self%id_c)
       ! VS also consider total carbon and total nitrogen
@@ -75,20 +83,41 @@ contains
 
       real(rk) :: PHY, ZOO
       real(rk) :: graz0, graz, zooexu, zooloss
+      real(rk) :: SED ! PLUME
+      real(rk) :: muzoofac, efffac, omnizfac, zlambdaf    ! PLUME
 
       _LOOP_BEGIN_
 
       _GET_(self%id_phy, PHY)
       _GET_(self%id_c, ZOO)
 
+      _GET_(self%id_sed, SED) ! PLUME
+
        if(ZOO.gt.0.0_rk) then
+
+         if(SED.gt.1.0e-4_rk) then ! SED > 10e-4
+
+            muzoofac    = self%ACmuzoofac
+            efffac      = self%ACefffac
+            omnizfac    = self%AComnizfac
+            zlambdaf    = self%zlambdafac
+
+         else ! SED <= 10e-4
+
+            muzoofac       = 1
+            efffac         = 1
+            omnizfac       = 1
+            zlambdaf       = 1
+
+         endif
 
          if(PHY.gt.0.0_rk) then
 
 ! Grazing of zooplankton, Holling III
-           graz0=((self%ACmuzoo*(PHY*PHY))/(self%ACkphy*self%ACkphy+PHY*PHY))*ZOO
+           graz0=muzoofac*self%ACmuzoo*PHY*PHY/(self%ACkphy*self%ACkphy+PHY*PHY)*ZOO ! LS PLUME
 ! Make sure not to graze more phytoplankton than available.
            graz = MIN(PHY,graz0*bgc_dt)/bgc_dt
+
          else !PHY < 0
 
            graz=0.0_rk
@@ -99,7 +128,7 @@ contains
           zooexu = self%AClambdaz * ZOO
 
 ! Zooplankton mortality 
-          zooloss = self%AComniz * ZOO * ZOO
+          zooloss = omnizfac * self%AComniz * ZOO * ZOO ! LS PLUME
 
        else !ZOO < 0
 
@@ -112,23 +141,23 @@ contains
        _SET_DIAGNOSTIC_(self%id_f2, graz)
        _SET_DIAGNOSTIC_(self%id_zooexu, zooexu)
 ! VS detritus production by zooplankton
-       _SET_DIAGNOSTIC_(self%id_det_prod_zoo, (1.0_rk-self%graztodop)*(1.0_rk-self%ACeff)*graz + (1.0_rk-self%graztodop)*zooloss)
+       _SET_DIAGNOSTIC_(self%id_det_prod_zoo, (1.0_rk-self%graztodop)*(1.0_rk-self%ACeff*efffac)*graz + (1.0_rk-self%graztodop)*zooloss)
 
 ! Collect all euphotic zone fluxes in these arrays.
-        _ADD_SOURCE_(self%id_c, self%ACeff*graz-zooexu-zooloss)
+        _ADD_SOURCE_(self%id_c, self%ACeff*efffac*graz-zooexu-zooloss) ! LS PLUME
         _ADD_SOURCE_(self%id_po4, zooexu)
-        _ADD_SOURCE_(self%id_dop, self%graztodop*(1.0_rk-self%ACeff)*graz + self%graztodop*zooloss)
+        _ADD_SOURCE_(self%id_dop, self%graztodop*(1.0_rk-self%ACeff*efffac)*graz + self%graztodop*zooloss) ! LS PLUME
         _ADD_SOURCE_(self%id_oxy, -zooexu*ro2ut)
         _ADD_SOURCE_(self%id_phy, -graz)
-        _ADD_SOURCE_(self%id_det, (1.0_rk-self%graztodop)*(1.0_rk-self%ACeff)*graz + (1.0_rk-self%graztodop)*zooloss)
+        _ADD_SOURCE_(self%id_det, (1.0_rk-self%graztodop)*(1.0_rk-self%ACeff*efffac)*graz + (1.0_rk-self%graztodop)*zooloss) ! LS PLUME
 
         _ADD_SOURCE_(self%id_din, zooexu*rnp)
         _ADD_SOURCE_(self%id_dic, zooexu*rcp)
         _ADD_SOURCE_(self%id_alk, -zooexu*(rnp+1))
 
          ZOO = MAX(ZOO - alimit*alimit, 0.0_rk)
-         _ADD_SOURCE_(self%id_c, -self%zlambda*ZOO)
-         _ADD_SOURCE_(self%id_dop, self%zlambda*ZOO)
+         _ADD_SOURCE_(self%id_c, -self%zlambda*zlambdaf*ZOO)   ! LS PLUME 
+         _ADD_SOURCE_(self%id_dop, self%zlambda*zlambdaf*ZOO)  ! LS PLUME 
 
       _LOOP_END_
    end subroutine do
