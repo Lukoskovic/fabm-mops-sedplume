@@ -14,7 +14,7 @@ module mops_phytoplankton
       type (type_surface_dependency_id) :: id_bgc_tau
       type (type_state_variable_id) :: id_c, id_po4, id_din, id_oxy, id_det, id_dop, id_dic, id_alk
       ! VS  introducing id_det_prod_phy (see below)
-      type (type_diagnostic_variable_id) :: id_f1, id_chl, id_det_prod_phy
+      type (type_diagnostic_variable_id) :: id_f1, id_chl, id_det_prod_phy, id_ACkchl
 
       real(rk) :: TempB, ro2ut, ACmuphy, ACik, ACkpo4, AClambda, AComni, plambda, exutodop
       real(rk) :: ACkchl
