@@ -1,9 +1,11 @@
-This repository is a fork ( *commit*  03fd736382e1b4a0b10a2193e7e48145a81383d8) from the FABM implementation of MOPS.  
+This repository is a fork (*commit*  03fd736382e1b4a0b10a2193e7e48145a81383d8) from the FABM implementation of MOPS [^1].  
 
 Original `README.md`
 > This is an implementation of the biogeochemical model [Model of Oceanic Pelagic Stoichiometry (MOPS)](https://doi.org/10.5194/gmd-8-2929-2015) for [FABM](https://fabm.net).
 > 
 > This work was funded by the European Union under grant agreement no. 101083922 (OceanICU) and UK Research and Innovation (UKRI) under the UK government’s Horizon Europe funding guarantee [grant number 10054454, 10063673, 10064020, 10059241, 10079684, 10059012, 10048179]. The views, opinions and practices used to produce this dataset/software are however those of the author(s) only and do not necessarily reflect those of the European Union or European Research Executive Agency. Neither the European Union nor the granting authority can be held responsible for them.
+
+FABM-MOPS model implementation is based on the MOPS code that was published [here](https://hdl.handle.net/20.500.12085/b174de1c-0bed-47f5-9718-7a8d44d1d2d1)[^2], which is the supplement by Kriest et al. (2023)[^3].
 
 ## Differences to the previous Implementation
 
@@ -28,3 +30,9 @@ Following processes are included:
 
 *Remark*: `...fac` points out to the additional factor of the corresponding parameter that is given in the name before the suffix.
 
+
+# Sources
+
+[^1]: FABM-MOPS repository is [https://github.com/BoldingBruggeman/fabm-mops](https://github.com/BoldingBruggeman/fabm-mops) 
+[^2]: Kriest, Iris, Getzlaff, Julia, Landolfi, Angela, Sauerland, Volkmar, Schartau, Markus, and Oschlies, Andreas (2023). Supplemental dataset to Kriest et al. (2023): Exploring the role of different data types and timescales for the quality of marine biogeochemical model calibration [dataset]. GEOMAR Helmholtz Centre for Ocean Research Kiel [distributor]. [hdl:20.500.12085/b174de1c-0bed-47f5-9718-7a8d44d1d2d1](https://hdl.handle.net/20.500.12085/b174de1c-0bed-47f5-9718-7a8d44d1d2d1)
+[^3]: Kriest, I., Getzlaff, J., Landolfi, A., Sauerland, V., Schartau, M., and Oschlies, A.: Exploring the role of different data types and timescales in the quality of marine biogeochemical model calibration, Biogeosciences, 20, 2645–2669, [https://doi.org/10.5194/bg-20-2645-2023](https://doi.org/10.5194/bg-20-2645-2023), 2023. 
