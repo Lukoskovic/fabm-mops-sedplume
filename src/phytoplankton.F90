@@ -38,7 +38,7 @@ contains
       call self%get_parameter(self%ACmuphy, 'ACmuphy', '1/day','max. growth rate', default=0.6_rk) 
       call self%get_parameter(self%ACik, 'ACik', 'W/m2','light half-saturation constant', default=9.653_rk) 
       call self%get_parameter(self%ACkpo4, 'ACkpo4', 'mmol P/m3','half-saturation constant for PO4 uptake', default=0.4995_rk) 
-      call self%get_parameter(self%ACkchl, 'ACkchl', '1/(m*mmol P/m3)','attenuation due to phytoplankton', default=0.03_rk*rnp)  ! LS add specificatin of attenuatoin
+      call self%get_parameter(self%ACkchl, 'ACkchl', '1/(m*mmol P/m3)','attenuation due to phytoplankton', default=0.03_rk*rnp)  ! LS add specification of attenuation type
       call self%get_parameter(self%AClambda, 'AClambda', '1/day','exudation rate', default=0.03_rk) 
       call self%get_parameter(self%exutodop, 'exutodop', '1','fraction of exudation that goes into DOP', default=0.0_rk)
       call self%get_parameter(self%AComni, 'AComni', 'm3/(mmol P * day)','density dependent loss rate', default=0.0_rk) 
